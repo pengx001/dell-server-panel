@@ -1,0 +1,34 @@
+services:
+  dell-server-panel:
+    build: .
+    image: dell-server-panel:latest
+    container_name: dell-server-panel
+    restart: unless-stopped
+    # host 网络: 面板才能看到宿主机网卡(IP/速率/累计流量)
+    network_mode: host
+    pid: host
+    environment:
+      PORT: "18080"                 # 面板端口
+      REFRESH: "5"                  # 前端刷新秒数
+      TITLE: "DELL服务器监控面板"
+
+      # ---- IPMI: 远程方式(推荐, 容器无需特权) ----
+      IPMI_HOST: "192.168.1.120"    # iDRAC / BMC 地址
+      IPMI_USER: "root"
+      IPMI_PASS: "calvin"
+      IPMI_INTERFACE: "lanplus"
+      ENABLE_FAN_CONTROL: "true"    # 关闭则只监控不调速
+
+      # ---- 访问密码(留空=不校验) ----
+      AUTH_USER: ""
+      AUTH_PASS: ""
+
+      # ---- 风扇调速档位(可选, 单位为 %) ----
+      FAN_TEMP_LIMIT: "78"          # 超过该温度自动交还 iDRAC
+    volumes:
+      - /sys:/sys:ro                # CPU/GPU 温度
+      - ./data:/data                # 配置与状态持久化
+      # 若要用"本地 IPMI"或读取直连硬盘温度, 取消下面两行注释(需要特权)
+      # - /dev:/dev
+      # - /proc:/proc
+    # privileged: true              # 本地 IPMI + 硬盘 SMART 需要
