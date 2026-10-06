@@ -1,0 +1,13 @@
+{
+  "port": 18080,
+  "bind": "0.0.0.0",
+  "refresh": 5,
+  "title": "DELL服务器监控面板",
+  "user": "",
+  "pass": "",
+  "fan_control": true,
+  "fan_vendor": "dell",
+  "fan_temp_limit": 78,
+  "fan_presets": {"quiet": 10, "standard": 20, "max": 100},
+  "fan_table": [[52, 10], [60, 12], [66, 16], [72, 25], [78, 40]]
+}
