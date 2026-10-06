@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e13'/%3E%3Cpath d='M6 23a10 10 0 0 1 20 0' fill='none' stroke='%232fd07a' stroke-width='3'/%3E%3Cpath d='M16 23l6-9' stroke='%23e6edf3' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='23' r='2.3' fill='%23e6edf3'/%3E%3C/svg%3E">
+<title>DELL服务器监控面板</title>
+<style>
+:root{--rtrk:#1b2330;--flash:#1b2b3f;--bg:#0b0e13;--card:#151a21;--tile:#1a2129;--fg:#e9eef6;--dim:#8b94a1;--dim2:#5c6675;
+--ok:#2fd07a;--warn:#f5a524;--crit:#f4515b;--acc:#3b82f6;--line:#232a34}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:10px 10px 24px;max-width:720px;margin:0 auto}
+.hd{display:flex;align-items:center;gap:8px;padding:4px 2px 12px;flex-wrap:wrap}
+.hd b{font-size:15.5px}
+.ring{width:9px;height:9px;border-radius:50%;flex:0 0 9px;box-shadow:0 0 8px currentColor}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--tile);color:var(--dim)}
+.rt{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim2)}
+.ref{background:var(--tile);border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:3px 9px;font-size:11px;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:9px}
+.ttl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);margin-bottom:9px}
+.ttl b{color:var(--fg);font-size:13px;font-weight:600}
+.ttl .r{margin-left:auto;font-size:11px;color:var(--dim2)}
+/* 数值卡片: 数值在上, 标签在下 —— 消除左右扫视 */
+.tiles{display:grid;gap:7px}
+.t3{grid-template-columns:repeat(3,1fr)}
+.t4{grid-template-columns:repeat(4,1fr)}
+.t5{grid-template-columns:repeat(5,1fr)}
+.tile{background:var(--tile);border-radius:11px;padding:9px 4px;text-align:center;min-width:0}
+.tile b{display:block;font-size:19px;font-weight:650;letter-spacing:-.4px;line-height:1.25;white-space:nowrap}
+.tile span{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.big b{font-size:22px}
+.mode{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:10px;color:var(--dim)}
+.mode b{color:var(--fg)}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
+button{background:var(--tile);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:9px 4px;font-size:12.5px;cursor:pointer;transition:.15s}
+button:hover{background:#1e2632;border-color:#3b4654;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.45)}
+button:active{transform:scale(.95) translateY(0);box-shadow:none;transition:transform .08s}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button.on{background:#1d3c66;border-color:var(--acc);color:#cfe3ff;box-shadow:0 0 0 1px var(--acc) inset,0 3px 14px rgba(58,133,255,.35);animation:pop .34s cubic-bezier(.34,1.56,.64,1)}
+.btns3{display:grid;grid-template-columns:116px 88px 88px;gap:9px;margin-bottom:6px;justify-content:center}
+.btns3 button{width:100%}
+.hint{font-size:10.5px;color:var(--dim2);text-align:center;margin-bottom:9px}
+.hint b{color:var(--dim)}
+#dv{max-width:116px}
+button.wide{width:100%;background:transparent;border-style:dashed;color:var(--dim);font-size:12px;padding:8px 4px}
+input{width:100%;padding:9px;border-radius:10px;border:1px solid var(--line);background:#11161c;color:var(--fg);text-align:center;font-size:14px}
+/* 风扇 */
+.fan{margin-bottom:8px}
+.fan .t{display:flex;align-items:baseline;gap:6px;font-size:12px;margin-bottom:4px}
+.fan .t b{margin-left:auto;font-weight:600}
+.bar{height:6px;background:#0e1319;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;transition:width 1.8s linear}
+/* 硬盘 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px}
+.dt{background:var(--tile);border-radius:9px;padding:7px 3px;text-align:center}
+.dt b{display:block;font-size:14px}
+.dt small{font-size:9.5px;color:var(--dim2)}
+.dt.hot{outline:1px solid #7a4a1f}
+/* 网卡: 上下两行, 不左右扫视 */
+.nic{background:var(--tile);border-radius:11px;padding:8px 10px;margin-bottom:7px}
+.nic .l1{display:flex;align-items:center;gap:7px;font-size:12.5px}
+.nic .l1 .nm{font-family:ui-monospace,monospace;font-weight:600}
+.nic .l1 .sp{color:var(--dim2);font-size:11px}
+.nic .l1 .st{margin-left:auto;font-size:10.5px;color:var(--dim2)}
+.nic .l2{display:flex;gap:12px;margin-top:5px;font-family:ui-monospace,monospace;font-size:12px;color:#6fc9f7;flex-wrap:wrap}
+.nic .l2 .tot{color:var(--dim2);font-size:10.5px;margin-left:auto}
+.ndot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.nerr{color:var(--crit);font-size:10.5px}
+.cores{font-size:11.5px;color:var(--dim);line-height:1.85;font-family:ui-monospace,monospace;word-break:break-all}
+.leg{font-size:10.5px;color:var(--dim2);text-align:center;padding:6px 0 0;line-height:1.7}
+.t2{color:var(--ok)}.w{color:var(--warn)}.b{color:var(--crit)}.d2{color:var(--dim2)}
+.hide{display:none!important}
+#fs{position:fixed;left:50%;bottom:20px;transform:translate(-50%,14px);background:#1e2733;border:1px solid #2f3a48;color:#dbe6f5;padding:9px 16px;border-radius:11px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 26px rgba(0,0,0,.45)}
+#fs.on{opacity:1;transform:translate(-50%,0)}
+.head{cursor:pointer;user-select:none}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+.wide:hover{color:var(--fg);border-style:solid;background:#161c24}
+.clk{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;color:var(--dim);font-size:11px;letter-spacing:.4px;padding:2px 9px;border-radius:999px;background:var(--tile);border:1px solid var(--line)}
+.clk::before{content:'';width:5px;height:5px;border-radius:50%;background:#3b82f6;box-shadow:0 0 6px #3b82f6}
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px}
+.cfg label{display:flex;align-items:center;gap:6px;background:var(--tile);border:1px solid var(--line);border-radius:8px;padding:7px 9px;cursor:pointer;transition:.15s}
+.cfg label:hover{background:#1e2632;border-color:#3b4654}
+.cfg input{width:auto;padding:0;text-align:left;accent-color:var(--acc)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card{animation:fadeUp .42s cubic-bezier(.2,.7,.3,1) both}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.ov{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.rg{background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rg:hover{border-color:#3b4654}
+.rg svg{width:64px;height:64px;display:block}
+.rg text{font-size:15px;font-weight:700;fill:var(--fg);font-variant-numeric:tabular-nums}
+.rg .rl{font-size:10.5px;color:var(--dim)}
+.rg .rc{stroke-linecap:round;transition:stroke-dashoffset 1.8s linear cubic-bezier(.3,.8,.4,1),stroke .3s}
+@keyframes flash{0%{background:var(--card)}38%{background:var(--flash)}100%{background:var(--card)}}
+.card.flash{animation:flash .8s ease}
+html[data-theme="light"]{--bg:#f1f4f8;--card:#fff;--tile:#f7f9fc;--line:#e3e8ef;--fg:#16202b;--dim:#5b6878;--dim2:#8b98a8;--rtrk:#e8ecf2;--flash:#dceaff;color-scheme:light}
+html[data-theme="light"] body{background:var(--bg);color:var(--fg)}
+html[data-theme="light"] .bar,html[data-theme="light"] .nb{background:#e8ecf2}
+html[data-theme="light"] .nic,html[data-theme="light"] .ndn,html[data-theme="light"] .clk,html[data-theme="light"] .spd,html[data-theme="light"] .cfg label,html[data-theme="light"] .rg{background:#fff}
+html[data-theme="light"] input{background:#fff}
+html[data-theme="light"] button{background:#fff}
+html[data-theme="light"] button:hover{background:#eef3f9}
+html[data-theme="light"] button.on{background:#dbe9ff;color:#12457f;border-color:#7fb0ff}
+html[data-theme="light"] .cfg label:hover{background:#eef3f9}
+html[data-theme="light"] .wide:hover{background:#fff}
+.fanrg text{font-size:9.5px!important;font-weight:600}
+.fanrg svg{width:72px;height:72px}
+.fanrg .rl{font-size:9.5px}
+.ntog{margin-top:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:11.5px;color:var(--dim);background:var(--tile);border:1px solid var(--line);border-radius:10px;padding:7px 8px;cursor:pointer;user-select:none;transition:background .18s,border-color .18s,color .18s}
+.ntog:hover{color:var(--fg);border-color:#3b4654;background:#1e2632}
+html[data-theme="light"] .ntog:hover{background:#eef3f9}
+.ntog b{color:var(--fg);font-weight:600}
+.ntog .ndot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;opacity:.8}
+.rsub{font-size:7px;fill:var(--dim2);letter-spacing:.5px}
+.fanrg text{font-size:15px!important}
+.frow{display:grid;grid-template-columns:44px 1fr 52px 26px 34px;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:none}
+.frow .fnm{font-size:12px;color:var(--dim);font-weight:600}
+.frow .fbar{height:9px;background:#0e1319;border-radius:99px;overflow:hidden;display:block}
+.frow .fbar i{transition:width 1.8s linear;display:block;height:100%;border-radius:99px;transition:width .6s cubic-bezier(.3,.8,.4,1),background .4s}
+.frow .fval{font-size:13px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.frow .funit{font-size:9.5px;color:var(--dim2);letter-spacing:.3px}
+.frow .fpct{font-size:10.5px;color:var(--dim2);text-align:right;font-variant-numeric:tabular-nums}
+.fsum{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--dim);text-align:center}
+.fsum b{color:var(--fg);font-variant-numeric:tabular-nums}
+html[data-theme="light"] .frow .fbar{background:#e8ecf2}
+.ndown{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.ndn{background:var(--tile);border:1px solid var(--line);border-radius:7px;padding:3px 9px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.fage{font-size:10.5px;color:var(--dim2);font-variant-numeric:tabular-nums}
+#dv{-moz-appearance:textfield;appearance:textfield;overflow:hidden}
+#dv::-webkit-outer-spin-button,#dv::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;margin:0}
+.fhint{color:var(--dim2);font-size:10.5px}
+.fsum{line-height:1.7}
+.mdl{font-size:10.5px;color:var(--dim);background:var(--tile);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+</style></head>
+<body>
+<div class="hd">
+  <span class="ring" id="hr" style="color:#2fd07a;background:#2fd07a"></span>
+  <span class="mdl" id="mdl" style="display:none"></span><b id="host">DELL服务器监控面板</b>
+  <span class="pill" id="up">-</span>
+  <span class="rt"><span class="clk" id="clock">--:--:--</span><span id="upd">-</span><button class="ref" onclick="load()">刷新</button><button class="ref" onclick="toggleTheme()">🌓</button><button class="ref" onclick="toggleCfg()">⚙️</button></span>
+</div>
+
+<!-- 概览: 关键温度一次看全 -->
+<div class="card" id="c-set" style="display:none">
+  <div class="ttl"><b>⚙️ 卡片显示设置</b><span class="r" onclick="resetCfg()" style="cursor:pointer">恢复默认</span></div>
+  <div class="cfg" id="cfglist"></div>
+</div>
+
+<div class="card" id="c-ov"><div class="ov" id="ov1"></div><div class="ov" id="ov2" style="margin-top:7px"></div></div>
+
+
+<div class="card" id="c-ctl">
+  <div class="ttl"><b>⚙️ 设置风扇转速</b><span class="r" id="mduty"></span></div>
+  <div class="mode"><span class="dot" id="dot"></span><b id="mtxt">-</b></div>
+  <div class="btns">
+    <button id="b-quiet" onclick="set('quiet')">🔇 静音</button>
+    <button id="b-standard" onclick="set('standard')">🟢 标准</button>
+    <button id="b-thermo" onclick="set('thermo')">🤖 温控自动</button>
+    <button id="b-max" onclick="set('max')">🚀 满速</button>
+  </div>
+  <div class="btns3"><input id="dv" type="number" min="10" max="100" step="5" maxlength="3" placeholder="10-100" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')setduty()"><button onclick="setduty()">应用</button><button onclick="set('idrac')" title="交还给 iDRAC 官方温度控制">↩️ 官方</button></div>
+  <div class="hint">自定义转速有效范围 10-100%（超出会自动收敛，回车可直接提交）</div>
+</div>
+
+<div class="card" id="c-fan">
+  <div class="ttl"><b>🌀 机箱风扇</b><span id="fcnt"></span><span class="r"><span class="fage" id="fage"></span> <span id="fred"></span></span></div>
+  <div id="fans"></div>
+  <div id="fsum"></div>
+</div>
+
+<div class="card" id="c-chas">
+  <div class="ttl"><b>🌡 机箱温度</b><span class="r">iDRAC</span></div>
+  <div class="tiles t4" id="chas"></div>
+</div>
+
+<div class="card" id="c-disk">
+  <div class="ttl"><b>💾 硬盘温度</b><span class="r" id="dsum"></span></div>
+  <div class="grid" id="drv"></div>
+</div>
+
+<div class="card" id="c-gpu">
+  <div class="ttl"><b>🎮 GPU</b><span class="r" id="gname"></span></div>
+  <div class="tiles t5" id="gt"></div>
+</div>
+
+<div class="card" id="c-core">
+  <div class="ttl head" onclick="tog()"><b>🧠 CPU 核心</b><span class="r" id="csum"></span><span class="r" id="carw">▾</span></div>
+  <div class="cores hide" id="cores">-</div>
+</div>
+
+<div class="card" id="c-sys">
+  <div class="ttl"><b>⚙️ 系统</b><span class="r" id="osis"></span></div>
+  <div class="tiles t3" id="syst"></div>
+</div>
+
+<div class="card" id="c-net">
+  <div class="ttl"><b>📶 网络</b><span class="r" id="nsum"></span></div>
+  <div id="net"></div>
+</div>
+
+
+
+
+
+
+
+
+
+<div class="leg">颜色：<span class="t2">正常</span> · <span class="w">偏高</span> · <span class="b">危险</span>　阈值：CPU 75/85 · GPU 80/88 · 硬盘 50/55 · 进风 33/38 °C</div>
+<div id="fs"></div>
+
+<script>
+function $(i){return document.getElementById(i)}
+function toast(t){var e=$('fs');e.textContent=t;e.classList.add('on');setTimeout(function(){e.classList.remove('on')},2600)}
+function set(p){
+  var ids=['b-quiet','b-standard','b-thermo','b-max'],map={quiet:'b-quiet',standard:'b-standard',thermo:'b-thermo',max:'b-max'};
+  ids.forEach(function(i){var e=$(i);if(e)e.classList.remove('on')});
+  if(map[p]){var t=$(map[p]);if(t)t.classList.add('on')}
+  var lbl={quiet:'静音档 10% · 切换中…',standard:'标准档 20% · 切换中…',thermo:'温控自动 · 切换中…',max:'满速 100% · 切换中…',idrac:'已交还 iDRAC · 切换中…'}[p];
+  if(lbl)$('mtxt').textContent=lbl;
+  fastUntil=Date.now()+20000;
+  fetch('/api/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({preset:p})})
+    .then(r=>r.json()).then(j=>{toast(j.msg);setTimeout(load,220)})}
+function setduty(){var el=$('dv'),v=parseInt(el.value,10);
+  if(isNaN(v)){toast('请输入 10-100 之间的数字');return}
+  if(v<10){v=10;toast('低于 10% 不安全, 已按 10% 提交')}
+  else if(v>100){v=100;toast('最高 100%, 已按 100% 提交')}
+  el.value=v;
+  fetch('/api/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({duty:v})})
+    .then(r=>r.json()).then(j=>{toast(j.msg);setTimeout(load,700)})}
+function cc(v,w,b){v=parseInt(v);if(isNaN(v))return 'd2';return v>=b?'b':(v>=w?'w':'t2')}
+function fc(r){return r>=9000?'b':(r>=6000?'w':'t2')}
+function fancol(r){return r>=9000?'#f4515b':(r>=6000?'#f5a524':'#2fd07a')}
+function fb(b){if(b>=1048576)return (b/1048576).toFixed(1)+' MB/s';if(b>=1024)return (b/1024).toFixed(1)+' KB/s';return b+' B/s'}
+function fsz(b){if(b>=1099511627776)return (b/1099511627776).toFixed(2)+' TB';if(b>=1073741824)return (b/1073741824).toFixed(1)+' GB';if(b>=1048576)return (b/1048576).toFixed(1)+' MB';return (b/1024).toFixed(0)+' KB'}
+function numsp(v,k){if(!k)return v;var m=String(v).match(/^(-?[\d.]+)(.*)$/);if(!m)return v;return '<span data-k="'+k+'" data-v="'+m[1]+'" data-s="'+m[2]+'">'+v+'</span>'}
+function tile(v,l,cls,big,k){return '<div class="tile'+(big?' big':'')+'"><b class="'+(cls||'')+'">'+numsp(v,k)+'</b><span>'+l+'</span></div>'}
+var opened=false;function tog(){opened=!opened;$('cores').classList.toggle('hide',!opened);$('carw').textContent=opened?'▴':'▾'}
+
+
+/* ===== 环形进度 ===== */
+function ring(v,lab,cls,max,k,suf,sub){
+  var num=parseFloat(v); if(isNaN(num))return '<div class="rg"><b style="font-size:15px">—</b><span class="rl">'+lab+'</span></div>';
+  suf=(suf===undefined?'\u00b0':suf);sub=sub||'';
+  var pct=Math.max(2,Math.min(100,num/max*100)), r=26, c=2*Math.PI*r, off=c*(1-pct/100);
+  var col=(cls==='b')?'#f4515b':(cls==='w'?'#f5a524':'#2fd07a');
+  return '<div class="rg"><svg viewBox="0 0 64 64">'
+    +'<circle cx="32" cy="32" r="'+r+'" fill="none" stroke="var(--rtrk)" stroke-width="6"/>'
+    +'<circle class="rc" cx="32" cy="32" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="6"'
+    +' stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 32 32)"/>'
+    +'<text x="32" y="'+(sub?'34':'37')+'" text-anchor="middle" data-k="'+(k||'')+'" data-v="'+num+'" data-s="'+suf+'">'+num+suf+'</text>'+(sub?'<text x="32" y="47" text-anchor="middle" class="rsub">'+sub+'</text>':'')
+  
+    +'</svg><span class="rl">'+lab+'</span></div>';
+}
+var TEMPK={pk0:1,pk1:1,ov_gpu:1,gtemp:1,'in':1,c1:1,c2:1,ov_in:1,ov_disk:1,exh:1};
+
+/* ===== 数值滚动动画 ===== */
+var PREV={};
+function animNums(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-k]'),function(el){
+    var k=el.getAttribute('data-k'),tgt=parseFloat(el.getAttribute('data-v')),suf=el.getAttribute('data-s')||'';
+    if(isNaN(tgt))return;
+    var from=PREV.hasOwnProperty(k)?PREV[k]:tgt;PREV[k]=tgt;
+    var dec=String(tgt).indexOf('.')>=0?1:0;
+    if(Math.abs(tgt-from)<0.6){el.textContent=tgt.toFixed(dec)+suf;return;}
+    if(TEMPK[k]&&Math.abs(tgt-from)>=1){var cd=el.closest('.card');if(cd){cd.classList.remove('flash');void cd.offsetWidth;cd.classList.add('flash');}}
+    var st=null,dur=900;
+    function step(ts){if(!st)st=ts;var p=Math.min(1,(ts-st)/dur),e=1-Math.pow(1-p,3);
+      el.textContent=(from+(tgt-from)*e).toFixed(dec)+suf;
+      if(p<1)requestAnimationFrame(step);else el.textContent=tgt.toFixed(dec)+suf;}
+    requestAnimationFrame(step);
+  });
+}
+var NET_HIST={};
+function spark(n){var h=NET_HIST[n.name]||[];if(h.length<2)return '<div class="sp"></div>';
+  var w=200,ht=30,mx=1;h.forEach(function(p){mx=Math.max(mx,p[0],p[1])});
+  function path(i){return h.map(function(p,j){var x=(j/(h.length-1))*w,y=ht-(p[i]/mx)*(ht-2)-1;return (j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}).join(' ')}
+  return '<svg class="sp" viewBox="0 0 '+w+' '+ht+'" preserveAspectRatio="none">'
+    +'<path d="'+path(0)+'" fill="none" stroke="#4b9bff" stroke-width="1.4"/>'
+    +'<path d="'+path(1)+'" fill="none" stroke="#2fd07a" stroke-width="1.4"/></svg>'}
+var netOpen=false;
+function netMore(){var e=$('ndown');if(!e)return;netOpen=!(e.style.display==='flex');var on=(e.style.display==='block'||e.style.display==='flex');e.style.display=on?'none':'flex';var a=$('narw');if(a)a.textContent=on?'▾':'▴'}
+function toggleTheme(){var cur=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',cur);localStorage.setItem('theme',cur);}
+(function(){var q=(location.search.match(/theme=(dark|light)/)||[])[1];var t=q||localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);if(q)localStorage.setItem('theme',q);})();
+document.addEventListener('DOMContentLoaded',function(){var el=$('dv');if(el)el.addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'').slice(0,3)})});
+var fastUntil=0;
+function smartLoad(){
+  if(Date.now()<fastUntil){setTimeout(load,900);return}
+  load();
+}
+function load(){
+ fetch('/api/status').then(r=>r.json()).then(d=>{
+  var _t=d.title||d.host||'DELL服务器监控面板';$('host').textContent=_t;var _m=(d.hw&&d.hw.model)||'';var _e=document.getElementById('mdl');if(_e){_e.style.display=(_m&&_t.indexOf(_m)<0)?'':'none';}
+  var hw=d.hw||{};var mt=(hw.vendor||'')+(hw.model?((hw.vendor?' · ':'')+hw.model):'');
+  if(mt && _t.indexOf(hw.model||'\u0000')<0){$('mdl').textContent=mt;$('mdl').style.display=''}else{$('mdl').style.display='none'}
+  if($('ver'))$('ver').textContent=d.ver||'';$('up').textContent='运行 '+(d.uptime||'-');
+  var h=d.health||'ok',col=h==='crit'?'#f4515b':(h==='warn'?'#f5a524':'#2fd07a');
+  $('hr').style.background=col;$('hr').style.color=col;
+  var pk=d.pkgs||d.cpu_pkgs||[],g=d.gpu,F=d.fans||[],fr=F.filter(x=>x[1]>100);
+  var avg=fr.length?Math.round(fr.reduce((a,x)=>a+x[1],0)/fr.length):0;
+  var hddAll=(d.drives||d.disks||[]).filter(x=>x[0]<12&&x[1]!==null).map(x=>x[1]);
+  var maxd=hddAll.length?Math.max.apply(null,hddAll):0;
+  var ch=d.chassis||{};
+  /* 概览: 6 个数值卡片(两行三列, 全部居中) */
+  var o1='';
+  pk.forEach(function(p,i){o1+=ring(p[1],p[0],cc(p[1],75,85),100,'pk'+i)});
+  if(d.cpu_pct!==null&&d.cpu_pct!==undefined)o1+=ring(d.cpu_pct,'CPU 使用率',d.cpu_pct>=90?'b':(d.cpu_pct>=70?'w':'t2'),100,'cpu_pct','%');
+  $('ov1').innerHTML=o1||tile('-','CPU','d2',true);
+  var o2='';
+  o2+=(g?ring(g.temp,'GPU 温度',cc(g.temp,80,88),100,'ov_gpu'):ring('—','GPU 温度','d2',100,'ov_gpu'));
+  o2+=(ch.inlet?ring(ch.inlet,'进风',cc(ch.inlet,33,38),60,'ov_in'):'');
+  o2+=(maxd?ring(maxd,'最高盘温',maxd>=50?'b':(maxd>=45?'w':'t2'),70,'ov_disk'):'');
+  $('ov2').innerHTML=o2;
+  /* 控制 */
+  var pr={quiet:10,standard:20,max:100};
+  ['quiet','standard','max'].forEach(function(k){var b=$('b-'+k);if(b)b.classList.toggle('on',d.mode==='manual:'+pr[k])});
+  $('b-thermo').classList.toggle('on',d.mode==='auto');
+  var mm=d.mode||'auto',mt={auto:'温控自动（按温度调节）',idrac:'已交还 iDRAC 官方控制'};
+  $('mtxt').textContent=mt[mm]||(mm.indexOf('manual:')===0?('手动固定 '+mm.split(':')[1]+'%'):mm);
+  $('dot').style.background=(mm==='idrac')?'var(--dim)':'var(--ok)';
+  $('mduty').textContent='转速 '+d.duty+'%';
+  /* 风扇 */
+  $('fcnt').textContent='共 '+F.length+' 个';$('fred').textContent=d.redundancy||'';
+  $('fans').innerHTML=F.map(function(f){
+    var pct=Math.min(100,Math.round(f[1]/17500*100));
+    var col=fancol(f[1]);
+    return '<div class="frow"><span class="fnm">'+f[0]+'</span>'
+      +'<span class="fbar"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+col+'aa,'+col+')"></i></span>'
+      +'<span class="fval" data-k="fan_'+f[0]+'" data-v="'+f[1]+'" data-s="">'+f[1]+'</span>'
+      +'<span class="funit">RPM</span><span class="fpct">'+pct+'%</span></div>'}).join('');
+  var fs2='';
+  if(fr.length){var v=fr.map(x=>x[1]);
+    fs2='<div class="fsum">平均 <b>'+avg+'</b> · 最低 <b>'+Math.min.apply(null,v)+'</b> · 最高 <b>'+Math.max.apply(null,v)+'</b> RPM<br><span class="fhint">设定档位 '+d.duty+'% ｜ 实测约为满速的 '+Math.round(avg/17500*100)+'%（Dell 风扇最低约 3700 RPM）</span></div>';}
+  $('fsum').innerHTML=fs2;$('c-fan').classList.toggle('hide',!F.length);
+  var fa=(d.ts&&d.ts.fans!=null)?d.ts.fans:null;$('fage').textContent=fa===null?'':'· '+(fa<=1?'刚刚':fa+' 秒前');
+  /* GPU: 5 个数值卡片 */
+  if(g){
+    $('gname').textContent=g.name||'';
+    $('gt').innerHTML=tile(g.temp+'°','温度',cc(g.temp,80,88),false,'gtemp')+tile((g.fan==='[N/A]'?'—':g.fan+'%'),'风扇',null,false,'gfan')
+      +tile((g.util||0)+'%','占用',null,false,'gutil')+tile((g.mem_used||g.mu||0)+'/'+(g.mem_total||g.mt||0),'显存 MB',null,false,'gmem')+tile((g.power||'-'),'功耗 W',null,false,'gpow');
+    $('c-gpu').classList.remove('hide');
+  } else {$('c-gpu').classList.add('hide')}
+  /* 网络: 每卡两行(名称/状态 + 上下行/累计) */
+  var N=d.net||[],upN=N.filter(function(n){return n.state==='up'}),dnN=N.filter(function(n){return n.state!=='up'});
+  $('c-net').classList.toggle('hide',!N.length);
+  upN.forEach(function(n){var H=NET_HIST[n.name]||(NET_HIST[n.name]=[]);H.push([n.rx,n.tx]);if(H.length>30)H.shift();});
+  $('net').className='nicgrid';$('net').innerHTML=upN.map(function(n){
+    var spd=n.speed?(n.speed>=1000?(n.speed/1000)+' Gbps':n.speed+' Mbps'):'端口速率 —';
+    var er=(n.rx_err+n.tx_err+n.rx_drop+n.tx_drop);
+    var bp=n.speed?Math.min(100,((n.rx+n.tx)*8)/(n.speed*1e6)*100):0;
+    var bpt=n.speed?(bp<1?bp.toFixed(2):bp.toFixed(1))+'%':'—';
+    return '<div class="nic">'
+      +'<div class="n1"><span class="ndot" style="background:#2fd07a;box-shadow:0 0 7px #2fd07a"></span>'
+      +'<span class="nm">'+n.name+'</span><span class="spd">'+spd+'</span></div>'
+      +'<div class="n2"><span class="rx">↓ '+fb(n.rx)+'</span><span class="tx">↑ '+fb(n.tx)+'</span>'
+      +(er?'<span class="nerr">错误 '+er+'</span>':'')+'</div>'
+      +spark(n)
+      +'<div class="nb"><i style="width:'+bp.toFixed(2)+'%"></i></div>'
+      +'<div class="n3"><span>带宽 '+bpt+'</span><span style="margin-left:auto">累计 ↓ '+fsz(n.rx_total)+' · ↑ '+fsz(n.tx_total)+'</span></div></div>';
+  }).join('')
+  +(dnN.length?'<div class="ntog" onclick="netMore()"><span class="ndot" style="background:#5b6878"></span>未连接的网卡 <b>'+dnN.length+'</b> <span id="narw">\u25be</span></div>'
+    +'<div class="ndown" id="ndown" style="display:'+(netOpen?'flex':'none')+'">'+dnN.map(function(n){return '<span class="ndn">'+n.name+'</span>'}).join('')+'</div>':'');
+  $('nsum').textContent=upN.length+' 个在线 · ↓'+fb(upN.reduce(function(a,n){return a+n.rx},0))+' ↑'+fb(upN.reduce(function(a,n){return a+n.tx},0));
+  /* 机箱温度: 4 个卡片 */
+  var ct='';
+  if(ch.inlet)ct+=tile(ch.inlet+'°','进风',cc(ch.inlet,33,38),false,'in');
+  if(ch.exhaust)ct+=tile(ch.exhaust+'°','排气',cc(ch.exhaust,55,62),false,'exh');
+  if(ch.cpu1)ct+=tile(ch.cpu1+'°','CPU1',cc(ch.cpu1,75,85),false,'c1');
+  if(ch.cpu2)ct+=tile(ch.cpu2+'°','CPU2',cc(ch.cpu2,75,85),false,'c2');
+  $('chas').innerHTML=ct||tile('—','无传感器','d2');
+  /* 硬盘 */
+  var D=d.drives||d.disks||[],hdd=D.filter(x=>x[0]<12&&x[1]!==null),ssd=D.filter(x=>x[0]>=12);
+  $('c-disk').classList.toggle('hide',!D.length);
+  $('drv').innerHTML=hdd.map(function(x){return '<div class="dt'+(x[1]===maxd&&hdd.length>1?' hot':'')+'"><b class="'+cc(x[1],45,50)+'">'+x[1]+'°</b><small>盘'+(x[0]+1)+'</small></div>'}).join('')
+    +ssd.map(function(x,i){return '<div class="dt"><b class="'+(x[1]===null?'d2':cc(x[1],55,62))+'">'+(x[1]===null?'—':x[1]+'°')+'</b><small>SSD'+(i+1)+'</small></div>'}).join('');
+  if(hdd.length)$('dsum').textContent='最高 '+maxd+'°C / '+hdd.length+' 块';
+  /* 系统 */
+  var sy=d.system||{};
+  $('osis').textContent=sy.os||'';
+  if(Object.keys(sy).length){
+    $('c-sys').classList.remove('hide');
+    var st='';
+    if(sy.load)st+=tile(sy.load,'负载 1/5/15');
+    if(sy.mem)st+=tile(sy.mem,'内存已用');
+    if(sy.uptime_sys||sy.uptime)st+=tile(sy.uptime_sys||sy.uptime,'系统运行');
+    $('syst').innerHTML=st||tile('—','无数据','d2');
+  } else {$('c-sys').classList.add('hide')}
+  animNums();
+  /* CPU 核心 */
+  var C=d.cpu||d.cpu_cores||[];$('csum').textContent=C.length+' 项';
+  $('cores').textContent=C.map(c=>c[0]+' '+c[1]+'°').join('  ·  ');
+  $('upd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
+ }).catch(function(){$('upd').textContent='连接失败，重试中…'});
+}
+load();setInterval(smartLoad,2000);
+
+/* ===== 实时时钟 ===== */
+function tick(){
+  var d=new Date(),p=function(n){return (n<10?'0':'')+n};
+  var e=document.getElementById('clock');if(!e)return;
+  e.textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  e.title=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' 星期'+'日一二三四五六'.charAt(d.getDay());
+}
+setInterval(tick,1000);tick();
+
+/* ===== 卡片显示设置(记住在本机) ===== */
+var CARDS=[['c-ov','概览温度'],['c-ctl','风扇控制'],['c-fan','机箱风扇'],['c-chas','机箱温度'],
+           ['c-disk','硬盘温度'],['c-gpu','GPU'],['c-core','CPU核心'],['c-sys','系统'],['c-net','网络']];
+function cfgGet(){try{return JSON.parse(localStorage.getItem('cardcfg')||'{}')}catch(e){return{}}}
+function cfgApply(){var c=cfgGet();CARDS.forEach(function(x){var el=document.getElementById(x[0]);
+  if(el){var was=el.style.display;el.style.display=(c[x[0]]===false)?'none':'';if(was==='none'&&el.style.display!=='none'){el.style.animation='none';void el.offsetWidth;el.style.animation='';}}});}
+function cfgRender(){var c=cfgGet(),box=document.getElementById('cfglist');if(!box)return;
+  box.innerHTML=CARDS.map(function(x){return '<label><input type="checkbox" data-id="'+x[0]+'"'+
+    (c[x[0]]===false?'':' checked')+'>'+x[1]+'</label>';}).join('');
+  Array.prototype.forEach.call(box.querySelectorAll('input'),function(i){i.onchange=function(){
+    var c2=cfgGet();c2[i.getAttribute('data-id')]=i.checked;
+    localStorage.setItem('cardcfg',JSON.stringify(c2));cfgApply();};});}
+function toggleCfg(){var e=document.getElementById('c-set');if(!e)return;
+  var vis=(e.style.display!=='none'&&e.style.display!=='');
+  e.style.display=vis?'none':'block';
+  if(!vis)cfgRender();}
+function resetCfg(){localStorage.removeItem('cardcfg');cfgApply();cfgRender();}
+cfgApply();
+
+</script>
+<div style="text-align:center;font-size:10.5px;color:var(--dim2);padding:14px 0 10px">DELL 服务器监控面板 <span id="ver"></span></div>
+</body>
+</html>
